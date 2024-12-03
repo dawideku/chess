@@ -5,23 +5,19 @@ from chess_objects import Rook, Knight, Bishop, Queen, King, Pawn
 
 pygame.init()
 
-WINDOW_SIZE = 480  # Rozmiar okna
+WINDOW_SIZE = 480
 SIZE = 8
-CELL_SIZE = WINDOW_SIZE // SIZE  # Rozmiar jednego pola
+CELL_SIZE = WINDOW_SIZE // SIZE
 BOARD_TYPE = "W"
 
-# Kolory pól szachownicy
 WHITE = (240, 240, 240)
 BLACK = (0, 40, 0)
 
-# Tworzenie ekranu
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
 pygame.display.set_caption("Szachownica")
 
-# Folder z obrazkami figur
 folder_path = os.path.join(os.path.dirname(__file__), 'pieces')
 
-# Ładowanie obrazków figur
 pieces_images = {
     "r_w": pygame.image.load(os.path.join(folder_path, "rook_w.png")),
     "k_w": pygame.image.load(os.path.join(folder_path, "knight_w.png")),
@@ -80,18 +76,49 @@ def draw_pieces(board):
                 if piece_key in pieces_images:
                     screen.blit(pieces_images[piece_key], (col * CELL_SIZE, row * CELL_SIZE))
 
+def get_square_under_mouse():
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    row = mouse_y // CELL_SIZE
+    col = mouse_x // CELL_SIZE
+    return row, col
+
 
 def main():
     board = initialize_board()
     running = True
+    dragging_piece = None
+    dragging_piece_pos = (0, 0)
 
     while running:
+        draw_chessboard()
+        draw_pieces(board)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    row, col = get_square_under_mouse()
+                    if board[row][col]:
+                        dragging_piece = board[row][col]
+                        dragging_start_pos = (row, col)
+                        dragging_piece_pos = pygame.mouse.get_pos()
+                        board[row][col] = None
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    if dragging_piece:
+                        row, col = get_square_under_mouse()
+                        dragging_piece.row, dragging_piece.column = row, col
+                        board[row][col] = dragging_piece
+                        dragging_piece = None
+            elif event.type == pygame.MOUSEMOTION and dragging_piece:
+                dragging_piece_pos = pygame.mouse.get_pos()
 
-        draw_chessboard()
-        draw_pieces(board)
+        if dragging_piece:
+            mouse_x, mouse_y = dragging_piece_pos
+            piece_key = f"{dragging_piece.sign}_{dragging_piece.color[0]}"
+            screen.blit(pieces_images[piece_key], (mouse_x - CELL_SIZE // 2, mouse_y - CELL_SIZE // 2))
+
         pygame.display.flip()
 
     pygame.quit()
