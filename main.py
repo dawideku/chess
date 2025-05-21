@@ -2,9 +2,11 @@ import pygame
 import sys
 import os
 import chess
+from chessAI import ChessAI
+
 
 pygame.init()
-
+ai = ChessAI()
 WINDOW_SIZE = 480
 SIZE = 8
 CELL_SIZE = WINDOW_SIZE // SIZE
@@ -118,9 +120,12 @@ def main():
                         if 0 <= row < SIZE and 0 <= col < SIZE:
                             if new_square in possible_moves:
                                 piece = chess.Piece.from_symbol(dragging_piece_key)
-                                board.set_piece_at(new_square, piece)
+                                board.set_piece_at(dragging_piece_square, piece)
+                                board.push(chess.Move(from_square=dragging_piece_square, to_square=new_square))
+                                move = ai.best_move(board, depth=4, time_limit=5)
+                                print(f"Komputer gra: {move}")
+                                board.push(move)
                                 print(board)
-                                board.turn = not board.turn
                             else:
                                 piece = chess.Piece.from_symbol(dragging_piece_key)
                                 board.set_piece_at(dragging_piece_square, piece)
