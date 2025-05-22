@@ -84,6 +84,46 @@ def get_square_under_mouse():
     col = mouse_x // CELL_SIZE
     return row, col
 
+def select_promotion():
+    WIDTH, HEIGHT = screen.get_size()
+    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 0))
+
+    figures = ['Q', 'R', 'B', 'N']
+    button_size = 80
+    spacing = 30
+    total_width = len(figures) * button_size + (len(figures) - 1) * spacing
+    start_x = (WIDTH - total_width) // 2
+    y = HEIGHT // 2 - button_size // 2
+
+    buttons = []
+    for i, fig in enumerate(figures):
+        x = start_x + i * (button_size + spacing)
+        rect = pygame.Rect(x, y, button_size, button_size)
+        image = pygame.transform.scale(pieces_images[fig], (button_size, button_size))
+        buttons.append((rect, fig, image))
+
+    clock = pygame.time.Clock()
+    while True:
+        screen.blit(overlay, (0, 0))
+
+        for rect, fig, image in buttons:
+            pygame.draw.rect(screen, (255, 255, 255), rect)
+            pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+            screen.blit(image, rect)
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                for rect, fig, _ in buttons:
+                    if rect.collidepoint(event.pos):
+                        return fig
+        clock.tick(30)
+
 def main():
     board = chess.Board()
     running = True
@@ -92,6 +132,7 @@ def main():
     dragging_piece_key = None
     dragging_piece_square = None
     possible_moves = []
+    computer_on_move = False
 
     while running:
         draw_chessboard()
@@ -122,10 +163,11 @@ def main():
                                 piece = chess.Piece.from_symbol(dragging_piece_key)
                                 board.set_piece_at(dragging_piece_square, piece)
                                 board.push(chess.Move(from_square=dragging_piece_square, to_square=new_square))
-                                move = ai.best_move(board, depth=4, time_limit=5)
-                                print(f"Komputer gra: {move}")
-                                board.push(move)
-                                print(board)
+                                if new_square > 55 and dragging_piece_key == 'P':
+                                    draw_pieces(board)
+                                    new_fig = select_promotion()
+                                    board.set_piece_at(new_square, chess.Piece.from_symbol(new_fig))
+                                computer_on_move = True
                             else:
                                 piece = chess.Piece.from_symbol(dragging_piece_key)
                                 board.set_piece_at(dragging_piece_square, piece)
@@ -144,6 +186,12 @@ def main():
             board.remove_piece_at(dragging_piece_square)
             screen.blit(pieces_images[piece_key], (mouse_x - CELL_SIZE // 2, mouse_y - CELL_SIZE // 2))
         pygame.display.flip()
+        if computer_on_move:
+            move = ai.best_move(board, depth=4, time_limit=5)
+            print(f"Komputer gra: {move}")
+            board.push(move)
+            print(board)
+            computer_on_move = False
 
     pygame.quit()
     sys.exit()
